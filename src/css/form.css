@@ -9,6 +9,10 @@ form .input-wrapper {
   display: grid;
   gap: 0.6rem;
 }
+.invalid {
+  border: 1px solid red;
+  outline: 1px solid red;
+}
 
 form label {
   font-weight: 600;
