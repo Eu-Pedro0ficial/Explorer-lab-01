@@ -9,6 +9,7 @@ function setCardType(type) {
   const colors = {
     visa: ["#436D99", "#2D57F2"],
     mastercard: ["#DF6F29", "#C69347"],
+    americanExpress: ["#ffffff", "#447A9A"],
     default: ["black", "gray"],
   }
 
@@ -25,6 +26,7 @@ const securityCodePattern = {
 const securityCodeMasked = IMask(securityCode, securityCodePattern)
 const expirationDate = document.querySelector("#expiration-date")
 const expirationDatePattern = {
+  // pegar o mês atual e não permitir que a pessoa coloque um mês qe já tenha passado!
   mask: "MM{/}YY",
   blocks: {
     YY: {
@@ -36,9 +38,25 @@ const expirationDatePattern = {
       mask: IMask.MaskedRange,
       from: 1,
       to: 12,
+      autofix: "pad",
     },
   },
 }
+expirationDate.addEventListener("input", () => {
+  let date = new Date()
+  let Presentmonth = date.getMonth()
+  let expirationDateValue = expirationDate.value.split("/")
+
+  console.log(expirationDateValue[0])
+
+  if (expirationDate.value == "") {
+    expirationDate.classList.remove("invalid")
+  } else if (expirationDateValue[0] < Presentmonth) {
+    expirationDate.classList.add("invalid")
+  } else {
+    expirationDate.classList.remove("invalid")
+  }
+})
 const expirationDateMasked = IMask(expirationDate, expirationDatePattern)
 
 const cardNumber = document.querySelector("#card-number")
@@ -53,6 +71,11 @@ const cardNumberPattern = {
       mask: "0000 0000 0000 0000",
       regex: /(^5[1-5]\d{0,2}|^22[2-9]\d|^2[3-7]\d{0,2})\d{0,12}/,
       cardtype: "mastercard",
+    },
+    {
+      mask: "0000 0000 0000 0000",
+      regex: /(^37[0-9]|^34[0-9])/,
+      cardtype: "americanExpress",
     },
     {
       mask: "0000 0000 0000 0000",
@@ -74,7 +97,12 @@ const cardNUmberMasked = IMask(cardNumber, cardNumberPattern)
 
 const addButton = document.querySelector("#add-card")
 addButton.addEventListener("click", () => {
-  alert("Cartão adicionado!")
+  checkFieldFilling(array)
+  if (validation == true) {
+    alert("Preencha os campos corretamente antes de enviar!")
+  } else {
+    alert("Cartão adicionado!")
+  }
 })
 
 document.querySelector("form").addEventListener("submit", (event) => {
@@ -88,19 +116,35 @@ cardHolder.addEventListener("input", () => {
   ccHolder.innerText =
     cardHolder.value.length === 0 ? "FULANO DA SILVA" : cardHolder.value
 })
-
+cardHolder.addEventListener("input", () => {
+  if (cardHolder.value == "") {
+    cardHolder.classList.remove("invalid")
+  } else if (/[^\w|\s]|[0-9]/.test(cardHolder.value)) {
+    cardHolder.classList.add("invalid")
+  } else {
+    cardHolder.classList.remove("invalid")
+  }
+})
 securityCodeMasked.on("accept", () => {
   updateSecurityCode(securityCodeMasked.value)
 })
 function updateSecurityCode(code) {
   const ccSecurity = document.querySelector(".cc-security .value")
   ccSecurity.innerText = code.length === 0 ? "123" : code
+  // verificar qual o tipo do cartão, se for o tipo "a", so podera receber "x" caracteres.
 }
 
 cardNUmberMasked.on("accept", () => {
   const cardType = cardNUmberMasked.masked.currentMask.cardtype
   setCardType(cardType)
   updateCardNumber(cardNUmberMasked.value)
+  if (cardNumber.value == "") {
+    cardNumber.classList.remove("invalid")
+  } else if (cardType == "default") {
+    cardNumber.classList.add("invalid")
+  } else {
+    cardNumber.classList.remove("invalid")
+  }
 })
 function updateCardNumber(number) {
   const ccNumber = document.querySelector(".cc-number")
@@ -113,4 +157,18 @@ expirationDateMasked.on("accept", () => {
 function updateExpirationDate(date) {
   const ccExpiration = document.querySelector(".cc-extra .value")
   ccExpiration.innerText = date.length === 0 ? "02/32" : date
+}
+const array = [securityCode, expirationDate, cardHolder, cardNumber]
+let validation
+function checkFieldFilling(array) {
+  for (const element of array) {
+    if (element.value == "") {
+      validation = true
+    }
+  }
+  for (const element of array) {
+    if (element.classList.value == "invalid") {
+      validation = true
+    }
+  }
 }
